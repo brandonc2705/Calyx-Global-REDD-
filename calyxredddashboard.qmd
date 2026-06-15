@@ -1,0 +1,128 @@
+---
+title: "Calyx Baseline Model"
+author: "Brandon Clark"
+format: dashboard
+---
+```{r}
+#| label: load-packages
+#| message: false
+
+library(tidyverse)
+library(readxl)
+library(jsonlite)
+#install.packages("DT")
+library(DT)
+library(shiny)
+theme_set(theme_bw(base_size = 22))
+```
+
+
+```{r}
+#| label: get data
+#| message: false
+baselines <- read_excel("/Users/brandonclark/Desktop/Calyx_ProjectRasters/Copy of VM0048 project list - R.xlsx", sheet = 2)
+
+baselines <- baselines |>
+  rename(project_area = `Project area`)|>
+  rename(nonVM48 = `Non-VM48 deforestation baseline`)|>
+  rename(verra_average = `Verra Average`)
+baselines$nonVM48[19]<- 1772
+baselines$nonVM48[28]<- 3365
+baselines <- baselines|>
+  mutate(nonVM48_rate = (nonVM48 / project_area) * 100)|>
+  mutate(verra_average_rate = (verra_average / project_area) * 100)|>
+  mutate(rate_diff = (nonVM48_rate - verra_average_rate))
+avg_diff <- baselines |>
+  group_by(Jurisdiction) |>
+  summarize(avg_rate_diff = mean(rate_diff, na.rm = TRUE))
+
+
+ num_projects <- n_distinct(baselines$`Project ID`)
+ projects_over <- sum(baselines$rate_diff > 0)
+ projects_under <- sum(baselines$rate_diff < 0)
+ smallest_proj <- min(baselines$project_area)
+ largest_proj <- max(baselines$project_area)
+ min_rate_diff <-min(baselines$rate_diff)
+ max_rate_diff <- max(baselines$rate_diff)
+```
+
+## Row {height=150px}
+
+### Column 
+
+```{r}
+#| content: valuebox
+#| title: Number of Projects
+
+list(color = "primary",
+     value = num_projects)
+```
+
+### Column
+```{r}
+#| content: valuebox
+#| title: Overestimated Projects
+
+list(color = "danger",
+     value = projects_over)
+```
+### Column
+```{r}
+#| content: valuebox
+#| title: Underestimated Projects
+
+list(color = "primary",
+     value = projects_under)
+```
+### Column
+```{r}
+#| content: valuebox
+#| title: Smallest Rate Difference (old - new)
+
+list(color = "primary",
+     value = min_rate_diff)
+
+```
+### Column
+```{r}
+#| content: valuebox
+#| title: Largest Rate Difference (old - new)
+
+list(color = "danger",
+     value = max_rate_diff)
+```
+## Row {height="20%"}
+
+### Column 
+```{r}
+#| title: "Scatter plot of old vs VM48 baseline"
+ggplot(baselines,
+                    aes(x = nonVM48_rate,
+                        y = verra_average_rate, color = Jurisdiction)) +
+  geom_point()+
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed")+
+  labs(title = "Deforestation Rate of old vs new baseline",
+       x = "nonVM48 deforestation rate",
+       y = "New Veraa avg deforestation rate")+
+  scale_x_continuous(breaks = seq(0, 10, by = 1))+
+  theme_minimal()
+
+```
+### Column
+```{r}
+#| title: "Bar graph of average rate difference by jurisdiction"
+
+ggplot(avg_diff,
+  aes(x = Jurisdiction,
+  y = avg_rate_diff))+
+  geom_col()+
+  geom_text(
+    aes(label = round(avg_rate_diff, 2)),
+    vjust = -1,
+    size = 5)+
+  theme_minimal()+
+  labs(title = "Average Deforestation Baseline Rate Difference by Jurisdiction",
+       y = "Rate difference average")
+```
+
+
