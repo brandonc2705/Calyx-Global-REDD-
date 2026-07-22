@@ -2,8 +2,7 @@
 title: "Calyx Baseline Model"
 author: "Brandon Clark"
 format: dashboard
-project:
-  output-dir: docs
+
 ---
 ```{r}
 #| label: load-packages
