@@ -143,7 +143,7 @@ ggplot(avg_diff,
   geom_text(
     aes(label = round(avg_rate_diff, 2)),
     vjust = -1,
-    size = 5)+
+    size = 4.5)+
   theme_minimal()+
   labs(title = "Average Deforestation Baseline Rate Difference by Jurisdiction",
        y = "Rate difference average")
