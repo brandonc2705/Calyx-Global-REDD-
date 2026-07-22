@@ -13,6 +13,7 @@ library(jsonlite)
 #install.packages("DT")
 library(DT)
 library(shiny)
+library(scales)
 theme_set(theme_bw(base_size = 22))
 ```
 
@@ -31,7 +32,11 @@ baselines$nonVM48[28]<- 3365
 baselines <- baselines|>
   mutate(nonVM48_rate = (nonVM48 / project_area) * 100)|>
   mutate(verra_average_rate = (verra_average / project_area) * 100)|>
-  mutate(rate_diff = (nonVM48_rate - verra_average_rate))
+  mutate(rate_diff = (nonVM48_rate - verra_average_rate))|>
+  mutate(baseline_status = if_else(rate_diff > 0,
+            "overestimated",
+            "underestimated"))
+
 avg_diff <- baselines |>
   group_by(Jurisdiction) |>
   summarize(avg_rate_diff = mean(rate_diff, na.rm = TRUE))
@@ -96,16 +101,35 @@ list(color = "danger",
 ### Column 
 ```{r}
 #| title: "Scatter plot of old vs VM48 baseline"
-ggplot(baselines,
-                    aes(x = nonVM48_rate,
-                        y = verra_average_rate, color = Jurisdiction)) +
-  geom_point()+
-  geom_abline(slope = 1, intercept = 0, linetype = "dashed")+
-  labs(title = "Deforestation Rate of old vs new baseline",
-       x = "nonVM48 deforestation rate",
-       y = "New Veraa avg deforestation rate")+
-  scale_x_continuous(breaks = seq(0, 10, by = 1))+
-  theme_minimal()
+ggplot(baselines, aes(x = verra_average_rate,
+               y = nonVM48_rate,
+               size = project_area,
+               color = baseline_status)) +
+  
+  geom_point(alpha = 0.3) +
+  
+  # 1:1 line
+  geom_abline(slope = 1, intercept = 0,
+              linewidth = 0.75) +
+  
+  scale_color_manual(values = c(
+    "overestimated" = "dodgerblue",
+    "underestimated" = "forestgreen"
+  )) +
+  
+  scale_x_continuous(labels = label_percent(scale = 1))+
+scale_y_continuous(labels = label_percent(scale = 1)) +
+  scale_size_continuous(name = "Project Area",labels = scales::comma
+  )+
+  labs(title = "VM0048 Baseline Comparison",
+    x = "VM0048 Baseline Rate",
+    y = "Old Baseline Rate",
+    color = NULL,
+    size = "Project Area (ha)"
+  ) +
+  
+  theme_minimal(base_size = 14)
+
 
 ```
 ### Column
